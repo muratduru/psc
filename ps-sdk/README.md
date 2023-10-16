@@ -1,0 +1,174 @@
+# Adobe Photoshop API SDK
+
+## Set up a Photoshop API automation project with just one command
+
+Once you have your credentials, the Adobe Photoshop API SDK can help you get started quickly by streamlining library installation and configuration, and providing sample content.
+
+1. ___New Projects___: With one command, the SDK will create a new Node.js project that you can build upon with all the dependencies needed to use the Photoshop API. This includes the [Adobe Photoshop API Library](https://github.com/adobe/aio-lib-photoshop-api) along with sample code and test files.
+
+1. ___Existing Projects___: If you have an existing project or service that simply requires the addition of the Adobe Photoshop API Library, go to [Adobe Photoshop API Library](https://github.com/adobe/aio-lib-photoshop-api) and follow the installation instructions.
+
+
+### Quick Start
+
+```
+npx create-adobe-photoshop-api-sdk my-project
+cd my-project
+```
+Running these commands will create a directory called my-project inside the current folder. Inside that directory, it will generate the initial project structure and install the dependencies:
+
+```
+my-project
+├── README.md
+├── node_modules
+├── package.json
+├── .gitignore
+├── config (your credential information goes here)
+│   ├── adobe-template.js
+│   ├── aws-template.js
+│   └── config.js
+└── src
+    ├── sample
+    │   ├── batch_script (This directory contains Photoshop API sample scripts for batch jobs)
+    │   └── psapi (This directory contains Photoshop API sample scripts for a single job)
+    └── testfiles (This directory contains test files that are used in sample scripts)
+```
+### Set your configuration
+You need to configure your Photoshop API credentials.
+
+1. Open `config/adobe-template.js` and save as `config/adobe.js`.
+1. Fill out the information in `config/adobe.js`. Everything you need to fill out can be found in your [console](https://developer.adobe.com/console/projects). If you have not created your credential yet, go to [Getting started with Photoshop API](https://developer-stage.adobe.com/photoshop/photoshop-api-docs/getting-started/#get-access).
+
+   ```
+   // Adobe Photoshop API Configuration
+   // https://developer.adobe.com/console/projects -> project -> OAuth Server-to-Server
+
+   const adobeConfig = {
+      clientId: "",
+      clientSecret: "",
+      orgId: ""
+   };
+   ```
+   ![](docs/console.jpg)
+
+### Run /documentManifest Photoshop API using this SDK
+
+```
+node src/sample/psapi/11_getDocumentManifest.js
+```
+
+You will receive an API response that shows a JSON manifest for [input01.psd](https://raw.githubusercontent.com/adobe/adobe-photoshop-api-sdk/main/testfiles/input/input01.psd). The JSON manifest contains the tree representation of all of the layer objects contained in the PSD document.
+
+___Other sample scripts require output storage to be set up. Below are the setup instructions for AWS S3.___
+
+## Input and output file storage
+
+We support external services including AWS S3, Azure, Dropbox and Google Drive. To set up external storage using AWS S3, please follow the instructions below. More details are to follow for other [storage providers](https://developer-stage.adobe.com/photoshop/photoshop-api-docs/general-workflow/#input-and-output-file-storage).
+
+### Access to AWS
+   1. If you don't already have an AWS account you can [create one](https://docs.aws.amazon.com/rekognition/latest/dg/setting-up.html).
+   1. Once your account is created, [create an S3 bucket] (https://s3.console.aws.amazon.com/s3/buckets).
+   1. Select “Create bucket” and name your bucket.
+
+#### Create AWS access key
+
+If you do not have an AWS access key already, you will need to create one by going to [AWS Account and Access Keys](https://docs.aws.amazon.com/powershell/latest/userguide/pstools-appendix-sign-up.html).
+Copy and paste the “Secret access key” and store it in a safe place. You will need it in the next step.
+  _We recommend downloading the .csv file and storing it in a safe location as the Secret will not be accessible after you leave the screen_
+
+#### Set up AWS CLI
+
+ 1. Install [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
+ 1. Configure AWS CLI by running the following command in your terminal: `aws configure`
+ 1. If you already have an aws profile, run `aws configure [--profile profile-name]`
+ 1. You will need to enter the following information:
+      - Add your AWS access key
+      - Add your AWS Secret access key
+      - Choose a default region (Choose a region closest to you for faster processing.)
+      - Choose a default output (format: NONE)
+ 1. Test AWS CLI: Run the following command `aws s3 ls` to verify everything is configured correctly. The command should return a list of your available buckets.
+ 1. Open `config/aws-template.js`, save as `config/aws.js`, and fill in the information in `config/aws.js`.
+
+```
+// AWS Configuration
+// https://aws.amazon.com/console/
+
+const awsConfig = {
+    accessKeyId: '',
+    secretAccessKey: '',
+    region: '',
+    bucketName: ''
+}
+```
+
+## Run Sample Script
+
+### Run a sample script (src/sample/psapi/...)
+
+1. Run a sample script to remove the background of the image
+
+```
+node src/sample/psapi/01_createCutout.js
+```
+
+2. Find your output file in your S3 storage, output directory (ex: s3://<awsConfig.bucketName>/output/...)
+
+### Run a sample script for a batch job (src/sample/batch_script/...)
+
+1. Store multiple JPEG files in your S3 storage (ex: s3://<awsConfig.bucketName>/input/...) or modify input/output directories in the sample script.
+```
+// -------------------------------------------------
+// Enter your parameters
+// -------------------------------------------------
+const inputDir = 'input/' //your input directory in S3 bucket (ex: s3://<awsConfig.bucketName>/input)
+const outputDir = 'output' //your output directory in S3 bucket (ex: s3://<awsConfig.bucketName>/input/output)
+
+const listObjectsInputRequest = { //URI Request Parameters
+  // Add more request as you like.  see https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjectsV2.html for more details
+  Bucket: awsConfig.bucketName, //Bucket name to list.
+  Prefix: inputDir, // Keys that begin with the indicated prefix.
+  MaxKeys: 5 // Sets the maximum number of keys returned in the response. By default, the action returns up to 1,000 key names.
+};
+// -------------------------------------------------
+```
+2. Run a sample script to remove the background of the multiple images
+
+```
+node src/sample/batch_job/01_createCutout_batch.js
+```
+
+3. Find your output files in your S3 storage, output directory (ex: s3://<awsConfig.bucketName>/input/output/...)
+
+- You can also use AWS CLI to sync files from your S3 storage into your local machine (ex: `aws s3 sync s3://<awsConfig.bucketName>/input/output/ /Users/<username>/Desktop/output/`)
+
+## API Support Status in the SDK
+
+| API | Endpoint | Status | Sample | Feature Doc | API Doc |
+| ------------- | ------------- | ------------- | ------------- | ------------- | ------------- |
+| Execute Photoshop Actions  | /pie/psdService/photoshopActions | Supported  | [13_applyPhotoshopActions.js](src/sample/psapi/13_applyPhotoshopActions.js)  | [Doc](https://www.adobe.com/go/photoshop-api-docs-actions)  | [API](https://developer.adobe.com/photoshop/photoshop-api-docs/api/#tag/Photoshop/operation/photoshopActions) |
+| Remove Background  | /sensei/cutout | Supported  | [01_createCutout.js](src/sample/psapi/01_createCutout.js)  | [Doc](https://www.adobe.com/go/photoshop-api-docs-imagecutout)  |  [API](https://developer.adobe.com/photoshop/photoshop-api-docs/api/#tag/Photoshop/operation/cutout) |
+| Create Mask  | /sensei/mask | Supported  | [02_createMask.js](src/sample/psapi/02_createMask.js)  | [Doc](https://developer.adobe.com/photoshop/photoshop-api-docs/features/#image-mask)  | [API](https://developer.adobe.com/photoshop/photoshop-api-docs/api/#tag/Photoshop/operation/mask) |
+| Rendering / Conversion  | /pie/psdService/renditionCreate | Supported  | [08_createRendition.js](src/sample/psapi/08_createRendition.js)  | [Doc](https://developer.adobe.com/photoshop/photoshop-api-docs/features/)  | [API](https://developer.adobe.com/photoshop/photoshop-api-docs/api/#tag/Photoshop/operation/renditionCreate) |
+| Create PSD  | /pie/psdService/documentCreate | Supported  | [09_createDocument.js](src/sample/psapi/09_createDocument.js)  | [Doc](https://developer.adobe.com/photoshop/photoshop-api-docs/features/#the-add-edit-and-delete-layers)  | [API](https://developer.adobe.com/photoshop/photoshop-api-docs/api/#tag/Photoshop/operation/documentCreate) |
+| Replace Smart Object  | /pie/psdService/smartObject | Supported  | [10_replaceSmartObject.js](src/sample/psapi/10_replaceSmartObject.js)  | [Doc](https://www.adobe.com/go/photoshop-api-docs-smartobject)  | [API](https://developer.adobe.com/photoshop/photoshop-api-docs/api/#tag/Photoshop/operation/smartObject) |
+| Get PSD Info (manifest)  | /pie/psdService/documentManifest | Supported  | [11_getDocumentManifest.js](src/sample/psapi/11_getDocumentManifest.js)  | N/A | [API](https://developer.adobe.com/photoshop/photoshop-api-docs/api/#tag/Photoshop/operation/documentManifest) |
+| Edit PSD  | /pie/psdService/documentOperations | Supported  | [12_modifyDocument.js](src/sample/psapi/12_modifyDocument.js)  | [Doc](https://developer.adobe.com/photoshop/photoshop-api-docs/features/#the-add-edit-and-delete-layers)  | [API](https://developer.adobe.com/photoshop/photoshop-api-docs/api/#tag/Photoshop/operation/documentOperations) |
+| Autotone  | /lrService/autoTone | Supported  | [03_autoTone.js](src/sample/psapi/03_autoTone.js)  | [Doc](https://www.adobe.com/go/photosop-api-docs-autotone)  | [API](https://developer.adobe.com/photoshop/photoshop-api-docs/api/#tag/Lightroom/operation/autoTone) |
+| Auto Straighten  | /lrService/autoStraighten | Supported  | [04_straighten.js](src/sample/psapi/04_straighten.js)  | [Doc](https://developer.adobe.com/photoshop/photoshop-api-docs/features/#autostraighten)  | [API](https://developer.adobe.com/photoshop/photoshop-api-docs/api/#tag/Lightroom/operation/autoStraighten) |
+| Preset  | /lrService/presets | Supported  | [05_applyPreset.js](src/sample/psapi/05_applyPreset.js)  | [Doc](https://www.adobe.com/go/photoshop-api-docs-presets)  | [API](https://developer.adobe.com/photoshop/photoshop-api-docs/api/#tag/Lightroom/operation/presets) |
+| XMP  | /lrService/xmp | Supported  | [06_applyPresetXmp.js](src/sample/psapi/06_applyPresetXmp.js)  | [Doc](https://developer.adobe.com/photoshop/photoshop-api-docs/features/#xmp)  | [API](https://developer.adobe.com/photoshop/photoshop-api-docs/api/#tag/Lightroom/operation/xmp) |
+| Edit Photo  | /lrService/edit | Supported  | [07_editPhoto.js](src/sample/psapi/07_editPhoto.js)  | [Doc]()  | [API]() | [API](https://developer.adobe.com/photoshop/photoshop-api-docs/api/#tag/Lightroom/operation/edit) |
+| actionJSON  | /pie/psdService/actionJSON | Coming soon | N/A | [Doc](https://developer.adobe.com/photoshop/photoshop-api-docs/features/#actionjson) | [API](https://developer.adobe.com/photoshop/photoshop-api-docs/api/#tag/Photoshop/operation/actionJSON) |
+| Product Crop  | /pie/psdService/productCrop | Coming soon | N/A | [Doc](https://developer.adobe.com/photoshop/photoshop-api-docs/features/#productcrop) | [API](https://developer.adobe.com/photoshop/photoshop-api-docs/api/#tag/Photoshop/operation/productCrop) |
+| Depth Blur  | /pie/psdService/depthBlur | Coming soon | N/A | [Doc](https://developer.adobe.com/photoshop/photoshop-api-docs/features/#depthblur) | [API](https://developer.adobe.com/photoshop/photoshop-api-docs/api/#tag/Photoshop/operation/depthBlur) |
+| Edit text layers  | /pie/psdService/text | Coming soon | N/A | [Doc](https://developer.adobe.com/photoshop/photoshop-api-docs/features/#text) | [API](https://developer.adobe.com/photoshop/photoshop-api-docs/api/#tag/Photoshop/operation/text) |
+| Create an artboard  | /pie/psdService/artboardCreate | Coming soon | N/A | [Doc](https://developer.adobe.com/photoshop/photoshop-api-docs/features/#artboards) | [API](https://developer.adobe.com/photoshop/photoshop-api-docs/api/#tag/Photoshop/operation/artboardCreate) |
+
+## Links
+
+- [Getting started with Photoshop API](https://developer-stage.adobe.com/photoshop/photoshop-api-docs/getting-started/#get-access)
+- [Photoshop API documentation](https://developer.adobe.com/photoshop/photoshop-api-docs/api/)
+- [Demo](https://developer.adobe.com/photoshop/api/demo/)
+- [Curl command examples](https://developer.adobe.com/photoshop/photoshop-api-docs/code-sample/)
+- [Supported Features](https://developer.adobe.com/photoshop/photoshop-api-docs/features/)
+- [Submit a ticket for support or feedback](https://psd-services.zendesk.com/hc/en-us/requests/new)
